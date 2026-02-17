@@ -1,28 +1,40 @@
 //@version=4
-study("ORB", overlay = true)
+define("ORB")
 
-inputMax = input(5, title= "ORB total time (minutes)")
-sess = input("0915-0920", type=input.session, title="Session Time") 
-t = time(timeframe.period, sess + ":1234567")
-hide = timeframe.isintraday and timeframe.multiplier <= inputMax
+// Webull-compatible ORB inputs
+orbMinutes = input(15, title="ORB Length (minutes)", minval=1, maxval=120)
+sessionStartHour = input(9, title="Session Start Hour", minval=0, maxval=23)
+sessionStartMinute = input(30, title="Session Start Minute", minval=0, maxval=59)
+showOnlyIntraday = input(true, title="Show on Intraday Charts Only", type=input.bool)
 
-is_newbar(res) => change(time(res)) != 0
-in_session = not na(t)
-is_first = in_session and not in_session[1]
+// Basic time/session state
+isIntraday = timeframe.isintraday
+shouldShow = showOnlyIntraday ? isIntraday : true
+currentMinuteOfDay = hour * 60 + minute
+sessionStart = sessionStartHour * 60 + sessionStartMinute
+sessionEnd = sessionStart + orbMinutes
+inOrbWindow = currentMinuteOfDay >= sessionStart and currentMinuteOfDay < sessionEnd
 
-orb_high = float(na)
-orb_low = float(na)
+// Detect day rollover
+isNewDay = year != year[1] or month != month[1] or dayofmonth != dayofmonth[1]
 
-if is_first
-    orb_high := high
-    orb_low := low
+// ORB state
+float orbHigh = na
+float orbLow = na
+
+if isNewDay
+    orbHigh := na
+    orbLow := na
+
+if inOrbWindow
+    orbHigh := na(orbHigh) ? high : max(orbHigh, high)
+    orbLow := na(orbLow) ? low : min(orbLow, low)
 else
-    orb_high := orb_high[1]
-    orb_low := orb_low[1]
-if high > orb_high and in_session
-    orb_high := high
-if low < orb_low and in_session
-    orb_low := low
+    orbHigh := nz(orbHigh[1], orbHigh)
+    orbLow := nz(orbLow[1], orbLow)
 
-plot(hide ? orb_high : na , style=plot.style_line, color=orb_high[1] != orb_high ? na : color.green, title="ORB High", linewidth=2)
-plot(hide ? orb_low : na , style=plot.style_line, color=orb_low[1] != orb_low ? na : color.red, title="ORB Low", linewidth=2)
+orbReady = not na(orbHigh) and not na(orbLow)
+
+// Plots (editable in indicator Style settings)
+plot(shouldShow and orbReady ? orbHigh : na, title="ORB High", color=color.green, linewidth=2, style=plot.style_line)
+plot(shouldShow and orbReady ? orbLow : na, title="ORB Low", color=color.red, linewidth=2, style=plot.style_line)
