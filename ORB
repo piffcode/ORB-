@@ -35,3 +35,6 @@ orbLowPlot = showOnIntraday ? (orbLow[1] != orbLow ? na : orbLow) : na
 // Plots (editable from indicator settings)
 plot(orbHighPlot, title="ORB High", linewidth=2, color=orbHighColor, style=plot.style_linebr)
 plot(orbLowPlot, title="ORB Low", linewidth=2, color=orbLowColor, style=plot.style_linebr)
+// Plots
+plot(showOnIntraday ? orbHigh : na, title="ORB High", linewidth=2, color=orbHigh[1] != orbHigh ? na : color.new(color.green, 0))
+plot(showOnIntraday ? orbLow : na, title="ORB Low", linewidth=2, color=orbLow[1] != orbLow ? na : color.new(color.red, 0))
