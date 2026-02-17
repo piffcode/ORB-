@@ -1,32 +1,40 @@
-//@version=4
-study("ORB (Webull-ready)", overlay=true)
+//@version=5
+indicator("ORB (Webull-ready)", overlay=true)
 
-// Inputs (kept simple for Webull compatibility)
-orbMinutes = input(5, title="ORB total time (minutes)", minval=1)
-sessionTime = input("0915-0920", type=input.session, title="Session Time")
+// Inputs
+orbMinutes = input.int(5, "ORB total time (minutes)", minval=1)
+sessionTime = input.session("0915-0920", "Session Time")
+orbHighColor = input.color(color.green, "ORB High Color")
+orbLowColor = input.color(color.red, "ORB Low Color")
 showOnIntraday = timeframe.isintraday and timeframe.multiplier <= orbMinutes
 
 // Session detection
-sessionBarTime = time(timeframe.period, sessionTime + ":1234567")
-inSession = not na(sessionBarTime)
+inSession = not na(time(timeframe.period, sessionTime + ":1234567"))
 isFirstBarOfSession = inSession and not inSession[1]
 
 // ORB values
-float orbHigh = na
-float orbLow = na
+var float orbHigh = na
+var float orbLow = na
 
-orbHigh := isFirstBarOfSession ? high : nz(orbHigh[1], high)
-orbLow := isFirstBarOfSession ? low : nz(orbLow[1], low)
+if isFirstBarOfSession
+    orbHigh := high
+    orbLow := low
+else
+    orbHigh := nz(orbHigh[1], high)
+    orbLow := nz(orbLow[1], low)
 
 if inSession and high > orbHigh
     orbHigh := high
 if inSession and low < orbLow
     orbLow := low
 
-// Keep line break behavior when ORB value updates
+// Keep the same line-break behavior while allowing style customization in settings
 orbHighPlot = showOnIntraday ? (orbHigh[1] != orbHigh ? na : orbHigh) : na
 orbLowPlot = showOnIntraday ? (orbLow[1] != orbLow ? na : orbLow) : na
 
-// Plots (Style tab editable in settings)
-plot(orbHighPlot, title="ORB High", linewidth=2, color=color.green, style=plot.style_linebr)
-plot(orbLowPlot, title="ORB Low", linewidth=2, color=color.red, style=plot.style_linebr)
+// Plots (editable from indicator settings)
+plot(orbHighPlot, title="ORB High", linewidth=2, color=orbHighColor, style=plot.style_linebr)
+plot(orbLowPlot, title="ORB Low", linewidth=2, color=orbLowColor, style=plot.style_linebr)
+// Plots
+plot(showOnIntraday ? orbHigh : na, title="ORB High", linewidth=2, color=orbHigh[1] != orbHigh ? na : color.new(color.green, 0))
+plot(showOnIntraday ? orbLow : na, title="ORB Low", linewidth=2, color=orbLow[1] != orbLow ? na : color.new(color.red, 0))
